@@ -250,3 +250,32 @@ The portal uses a tracked migration system. Migrations are SQL files that modify
 **Startup tasks vs migrations:**
 - `server/startup.js` runs **every boot** (permission sync, stale cleanup) — these are NOT migrations
 - Migrations run **once** and are tracked — don't put recurring logic in a migration
+
+#### Dev Server Ports (Multiple Sessions)
+
+Multiple Claude sessions can each run their own dev server from different worktrees without port conflicts. Each worktree gets its own port pair.
+
+**Default ports (main repo):** API = 3001, Vite = 5173
+
+**For additional worktrees**, add these to the worktree's `.env`:
+```
+API_PORT=3002
+VITE_PORT=5174
+VITE_API_PORT=3002
+```
+
+The `vite.config.js` reads `VITE_PORT` and `VITE_API_PORT` from `.env` to set the dev server port and API proxy target. The server reads `API_PORT` for its listen port.
+
+**Port allocation:**
+| Worktree | API Port | Vite Port |
+|---|---|---|
+| Main repo | 3001 | 5173 |
+| Worktree 2 | 3002 | 5174 |
+| Worktree 3 | 3003 | 5175 |
+| etc. | +1 | +1 |
+
+**When setting up a new worktree dev server:**
+1. Copy `.env` from the main repo
+2. Change `API_PORT`, `VITE_PORT`, and add `VITE_API_PORT` to the next available ports
+3. Run `npm install` (worktrees don't share node_modules)
+4. Start with `node server/index.js` and `npx vite` — both must run from the worktree directory
