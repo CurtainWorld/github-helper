@@ -274,8 +274,15 @@ The `vite.config.js` reads `VITE_PORT` and `VITE_API_PORT` from `.env` to set th
 | Worktree 3 | 3003 | 5175 |
 | etc. | +1 | +1 |
 
-**When setting up a new worktree dev server:**
-1. Copy `.env` from the main repo
-2. Change `API_PORT`, `VITE_PORT`, and add `VITE_API_PORT` to the next available ports
-3. Run `npm install` (worktrees don't share node_modules)
-4. Start with `node server/index.js` and `npx vite` — both must run from the worktree directory
+**When setting up a new worktree dev server (CurtainWorld Portal):**
+1. Copy `.env.example` to `.env`. **Never copy another workspace's `.env`**: it carries that workspace's database, sign-in secret and credentials.
+2. Set `API_PORT`, `VITE_PORT` and `VITE_API_PORT` to the next free pair (table above), and set `JWT_SECRET` to a new random value (e.g. `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`).
+3. Run `npm install` (worktrees don't share node_modules).
+4. Run `npm run db:local -- restore -WriteEnv`. This creates this workspace's own copy of future, `Portal_LocalDev_<folder>`, from the nightly scrubbed backup, and writes the `DB_*` lines.
+5. Start with `node server/index.js` and `npx vite`; both must run from the worktree directory. Sign in as `<name>@curtainworld.test` with password `CurtainWorld-dev`.
+
+**Rules for local servers** (portal CLAUDE.md "Local servers"):
+- A local server only ever uses a SQL Server on this machine. Never point a `.env` at cw-app01 or `Portal_CurtainWorld_Migration`; the server refuses to start, and developers have no login there anyway. If an old workspace's server refuses, fix it with step 4. Do not route around the refusal.
+- Email goes only to the UAT redirect mailbox, SMS only to the test mobile. Graph and MYOB are off unless `LOCAL_ALLOW_GRAPH=true` / `LOCAL_ALLOW_MYOB=true` (MYOB TEST tenant only). Every other outside write is refused.
+- `[local] refused …` in the log means the guard is working. Do not try to work around it.
+- When the workspace is removed, drop its copy: `npm run db:local -- drop -Name <name>` (`list` shows them).
